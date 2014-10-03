@@ -6,17 +6,17 @@
 namespace vasaka {
 
 template <typename T>
-int32_t signum(T x) {
+inline constexpr int32_t signum(T x) {
 	return (T(0) < x) - (x < T(0));
 }
 
-inline int8_t signum_log2(int32_t x) {
-	int8_t log2 = static_cast<int8_t>(8 * sizeof(int32_t) - __builtin_clz(abs(x)) - 1);
+inline constexpr int8_t signum_log2(int32_t x) {
 	static_assert(8 * sizeof(int32_t) == __builtin_clz(1) + 1, "log is wrong");
-	return log2 * signum(x);
+	// signum(x) * log2(abs(x))
+	return signum(x) * static_cast<int8_t>(8 * sizeof(int32_t) - __builtin_clz(abs(x)) - 1);
 }
 
-inline int8_t abs_log2(int32_t x) {
+inline constexpr int8_t abs_log2(int32_t x) {
 	static_assert(8 * sizeof(int32_t) == __builtin_clz(1) + 1, "log is wrong");
 	return static_cast<int8_t>(8 * sizeof(int32_t) - __builtin_clz(abs(x)) - 1);
 }
@@ -24,42 +24,56 @@ inline int8_t abs_log2(int32_t x) {
 
 class short_int32_t {
 public:
+	constexpr  short_int32_t(): m_log(0), m_tail(0) {};
+
 	short_int32_t(int32_t x) {
 		set(x);
 	}
 
-	void operator=(int32_t x) {
+	short_int32_t& operator=(int32_t x) {
 		set(x);
+		return *this;
 	}
 
-	bool operator<(short_int32_t x) {
+	bool operator<(short_int32_t x) const {
 		return m_log == x.m_log ? (signum(m_log) * m_tail < signum(x.m_log) * x.m_tail) : (m_log < x.m_log);
 	}
 
-	short_int32_t operator*(short_int32_t x) {
-		return short_int32_t(get() * x.get());
+	bool operator<=(short_int32_t x) const {
+		return m_log == x.m_log ? (signum(m_log) * m_tail <= signum(x.m_log) * x.m_tail) : (m_log < x.m_log);
 	}
 
-	short_int32_t operator+(short_int32_t x) {
-		return short_int32_t(get() + x.get());
+	bool operator>(short_int32_t x) const {
+		return m_log == x.m_log ? (signum(m_log) * m_tail > signum(x.m_log) * x.m_tail) : (m_log > x.m_log);
 	}
 
-	short_int32_t operator-(short_int32_t x) {
-		return short_int32_t(get() - x.get());
+	bool operator>=(short_int32_t x) const {
+		return m_log == x.m_log ? (signum(m_log) * m_tail >= signum(x.m_log) * x.m_tail) : (m_log > x.m_log);
 	}
 
-	short_int32_t operator*(int32_t x) {
-		return short_int32_t(get() * x);
+	int32_t operator*(short_int32_t x) const {
+		return get() * x.get();
 	}
 
-	short_int32_t operator+(int32_t x) {
-		return short_int32_t(get() + x);
+	int32_t operator+(short_int32_t x) const {
+		return get() + x.get();
 	}
 
-	short_int32_t operator-(int32_t x) {
-		return short_int32_t(get() - x);
+	int32_t operator-(short_int32_t x) const {
+		return get() - x.get();
 	}
 
+	int32_t operator*(int32_t x) const {
+		return get() * x;
+	}
+
+	int32_t operator+(int32_t x) const {
+		return get() + x;
+	}
+
+	int32_t operator-(int32_t x) const {
+		return get() - x;
+	}
 
 	void set(int32_t x) {
 		if (x == 0) {
@@ -97,16 +111,19 @@ public:
 	uint8_t m_tail;
 };
 
-short_int32_t operator*(int32_t x, short_int32_t y) {
+//TODO: fix inversion, try make class constexpr
+//static_assert((-35475648).get() + short_int32_t(35475648).get() == 0, "inversion is not correct");
+
+inline int32_t operator*(int32_t x, short_int32_t y) {
 	return y * x;
 }
 
-short_int32_t operator+(int32_t x, short_int32_t y) {
+inline int32_t operator+(int32_t x, short_int32_t y) {
 	return y + x;
 }
 
-short_int32_t operator-(int32_t x, short_int32_t y) {
-	return short_int32_t(x - y.get());
+inline int32_t operator-(int32_t x, short_int32_t y) {
+	return x - y.get();
 }
 
 }
