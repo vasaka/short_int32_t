@@ -3,7 +3,7 @@
 
 #include <cstdlib>
 
-namespace synonym_prototypes {
+namespace vasaka {
 
 template <typename T>
 int32_t signum(T x) {
